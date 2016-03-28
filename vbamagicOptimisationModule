@@ -1,0 +1,54 @@
+Function Optimisation(varSwitch)
+'Name           vbamagicOptimisationModule
+'Description    A binary activated module targeted at various optimisation routines. 
+'               Be careful wit dem autoconfagulates
+'               Shoutout to Microsoft for some additional inspiration
+'               https://blogs.office.com/2009/03/12/excel-vba-performance-coding-best-practices/
+'Inputs         
+'Outputs        
+'TO-DO          Set up an inputs array.
+'Change History
+'yyyy-mm-dd     Editor                  Description of changes
+'2015-10-12     git\thisnamewasnottaken First version
+'2016-03-28     git\thisnamewasnottaken Added some formatting and initialisation paramaters for later integration.
+
+'INITIALISE
+  'screenUpdateState = Application.ScreenUpdating
+  'statusBarState = Application.DisplayStatusBar
+  'calcState = Application.Calculation
+  'eventsState = Application.EnableEvents
+  'displayPageBreakState = ActiveSheet.DisplayPageBreaks ‘note this is a sheet-level setting
+
+'RUN
+    Select Case varSwitch
+        Case True                                             'When set to true, turn on optimisation
+            Application.Calculation = xlCalculationManual     'Manual calculation requires explicit calculation instruction
+            Application.ScreenUpdating = False                'Screenupdating freezes the screen, and prevents re-draw
+            Application.CutCopyMode = False                   'Empty the copy cache
+            Application.DisplayAlerts = False                 'Disable alert displays, be careful if you want to use message boxes.
+            Application.DisplayStatusBar = False
+            Application.EnableEvents = False
+            ActiveSheet.DisplayPageBreaks = False             'note this is a sheet-level setting
+        Case False                                            'When set to false, turn off optimisation
+            Application.Calculation = xlCalculationAutomatic  'Revert to automatic calculation
+            Application.ScreenUpdating = True                 'Allow re-draw of screen
+            Application.CutCopyMode = True                    'Empty copy cache
+            Application.DisplayAlerts = True                  'Enable alert displays
+            Application.DisplayAlerts = False                 'Disable alert displays, be careful if you want to use message boxes.
+            Application.DisplayStatusBar = False
+            Application.EnableEvents = False
+            ActiveSheet.DisplayPageBreaks = False             'note this is a sheet-level setting
+                'This could be a better way to do it...
+                'Application.ScreenUpdating = screenUpdateState
+                'Application.DisplayStatusBar = statusBarState
+                'Application.Calculation = calcState
+                'Application.EnableEvents = eventsState
+                'ActiveSheet.DisplayPageBreaks = displayPageBreaksState ‘note this is a sheet-level setting
+    End Select
+
+'CLOSE
+
+End Sub
+
+
+
