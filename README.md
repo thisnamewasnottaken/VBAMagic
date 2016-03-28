@@ -3,6 +3,28 @@
 VBA Magic is my baby repository of VBA shortcuts and routines I find useful. 
 Some are my original work, others were adapted from sources or just even plain copies from forums.
 
+All code intends to follow the structure below. 
+Some self-awareness challenges remain.
+```vba
+Sub Optimisation()
+'Name           Name of function or routine
+'Description    Description of function or routine
+'Inputs         Input 1     Input Description
+'               Input 2
+'               etc.
+'Outputs        Output      Output Description
+'Change History
+'yyyy-mm-dd     Editor      Description of changes
+
+'INITIALISE
+
+'RUN
+
+'CLOSE
+
+End Sub
+```
+
 ## Support & Discuss
 There is no place to go and discuss this repository, but feel free to change anything you need to!
 
