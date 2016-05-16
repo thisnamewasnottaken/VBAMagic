@@ -1,0 +1,18 @@
+Sub Optimisation()
+'Name           Name of function or routine
+'Description    Description of function or routine
+'Inputs         Input 1     Input Description
+'               Input 2
+'               etc.
+'Outputs        Output      Output Description
+'Change History
+'yyyy-mm-dd     Editor      Description of changes
+'
+'INITIALISE
+'Initialise variables
+
+'RUN
+
+'CLOSE
+
+End Sub
