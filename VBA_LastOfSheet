@@ -1,0 +1,65 @@
+
+Function LastOfSheet(varSheet As String, varRC As String)
+'Name           LastOfSheet
+'Description    Find the last row or column of the sheet
+'Inputs         varSheet    String containing the sheet name
+'               varRC       Takes string values "R" indicating row, or "C" indicating column.
+'Outputs        Output      Row or column of sheet specified
+'Change History
+'yyyy-mm-dd     Editor                  Description of changes
+'2015-10-07     git\thisnamewasnottaken First version
+
+'INITIALISE
+    'Determine starting folder to return to after code runs
+    varStartingSheet = ActiveSheet.Name
+
+'RUN
+    Sheets(varSheet).Activate
+    Select Case varRC
+        Case "R"
+            LastOfSheet = Cells.Find(What:="*", After:=[A1], SearchOrder:=xlByRows, SearchDirection:=xlPrevious).Row
+            GoTo CloseElegant
+        Case "C"
+            LastOfSheet = Cells.Find(What:="*", After:=[A1], SearchOrder:=xlByColumns, SearchDirection:=xlPrevious).Column
+    End Select
+            
+    
+CloseElegant:
+    'Return to starting Sheet
+    Sheets(varStartingSheet).Activate
+
+End Function
+
+Function Optimisation(varSwitch)
+'Name           Optimisation
+'Description    Turn on generic optimisation for VBA. Be careful with using this.
+'Inputs         varSwitch   True/False value turns on or turns off optimisation.
+'Outputs        None
+'Change History
+'yyyy-mm-dd     Editor                  Description of changes
+'2015-10-12     git\thisnamewasnottaken First version
+    
+    'Activate Variable
+    Select Case varSwitch
+        Case True
+        'When set to true, turn on optimisation
+            Application.Calculation = xlCalculationManual
+            'Manual calculation requires explicit calculation instruction
+            Application.ScreenUpdating = False
+            'Screenupdating freezes the screen, and prevents re-draw
+            Application.CutCopyMode = False
+            'Empty the copy cache
+            Application.DisplayAlerts = False
+            'Disable alert displays, be careful if you want to use message boxes.
+        Case False
+        'When set to false, turn off optimisation
+            Application.Calculation = xlCalculationAutomatic
+            'Revert to automatic calculation
+            Application.ScreenUpdating = True
+            'Allow re-draw of screen
+            Application.CutCopyMode = True
+            'Empty copy cache
+            Application.DisplayAlerts = True
+            'Enable alert displays
+    End Select
+End Function
