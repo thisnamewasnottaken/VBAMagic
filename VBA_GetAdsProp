@@ -1,0 +1,52 @@
+Function GetAdsProp(ByVal SearchField As String, ByVal SearchString As String, ByVal ReturnField As String) As String
+'Name           GetAdsProp
+'Description    AD Property lookup based on input property.
+'Inputs         SearchField   Input field name from AD Infoset
+'               SearchString  Input field value
+'Outputs        Output        Name of field value to return
+'Reference      Microsfot ActiveX Data Objects 2.7 Library (or higher)
+'Change History
+'2016-03-21     Editor      Original from http://www.remkoweijnen.nl/blog/2007/11/01/query-active-directory-from-excel/
+'                           http://www.kouti.com/tables/userattributes.htm
+INITIALISE:
+    ' Get the domain string ("dc=domain, dc=local")
+    Dim strDomain As String
+    strDomain = GetObject("LDAP://rootDSE").Get("defaultNamingContext")
+
+RUN:
+    ' ADODB Connection to AD
+    Dim objConnection As ADODB.Connection
+    Set objConnection = CreateObject("ADODB.Connection")
+    objConnection.Open "Provider=ADsDSOObject;"
+        
+    ' Connection
+    Dim objCommand As ADODB.Command
+    Set objCommand = CreateObject("ADODB.Command")
+    objCommand.ActiveConnection = objConnection
+        
+    ' Search the AD recursively, starting at root of the domain
+    objCommand.CommandText = _
+        "<LDAP://" & strDomain & ">;(&(objectCategory=User)" & _
+        "(" & SearchField & "=" & SearchString & "));" & SearchField & "," & ReturnField & ";subtree"
+ 
+    ' RecordSet
+    Dim objRecordSet As ADODB.Recordset
+    Set objRecordSet = objCommand.Execute
+         
+    
+    If objRecordSet.RecordCount = 0 Then
+        GetAdsProp = "_nf_"  ' no records returned
+    Else
+        GetAdsProp = objRecordSet.Fields(ReturnField)  ' return value
+    End If
+
+CLOSE:     
+    ' Close connection
+    objConnection.Close
+    
+    ' Cleanup
+    Set objRecordSet = Nothing
+    Set objCommand = Nothing
+    Set objConnection = Nothing
+
+End Function
