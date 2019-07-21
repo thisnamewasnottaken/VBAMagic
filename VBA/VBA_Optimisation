@@ -1,11 +1,10 @@
 Function Optimisation(varSwitch)
 'Name           vbamagicOptimisationModule
-'Description    A binary activated module targeted at various optimisation routines. 
-'               Be careful wit dem autoconfagulates
-'               Shoutout to Microsoft for some additional inspiration
+'Description    A function targeted at various VBA optimisation routines. 
+'               Be careful wit dem autoconfagulates inspired by Microsoft.
 '               https://blogs.office.com/2009/03/12/excel-vba-performance-coding-best-practices/
-'Inputs         
-'Outputs        
+'Inputs         True / False
+'Outputs        none
 'TO-DO          Set up an inputs array.
 'Change History
 'yyyy-mm-dd     Editor                  Description of changes
@@ -48,7 +47,7 @@ Function Optimisation(varSwitch)
 
 'CLOSE
 
-End Sub
+End Function
 
 
 
