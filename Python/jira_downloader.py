@@ -1,5 +1,5 @@
 '''
-Script to authenticate against JIRA and draw down a paginated JSON file.
+Script to authenticate against JIRA and draw down a paginated JSON file containing all records of the provided project code and server.
 References:
 # https://blog.deiser.com/en/seven-ways-to-export-jira-issues
 # https://developer.atlassian.com/server/jira/platform/rest-apis/
@@ -17,10 +17,34 @@ def wait_for_enter():
  
 class CheckConfig(object):
     def run(self, context):
-        print("The project server is {0}".format(context["jira_server"]))
-        print(context["jira_server"])
+        print("The following context is applied to this script:")
+        print("The project server is " + context["jira_server"])
+        print("The project code is: " + context["jira_project"])
+        #wait_for_enter()
+
+class GetMaxTickets(object):
+    def run(self, context):
+        headers = { 'Content-Type' : 'application/json'
+                        }
+        parameters = {
+                    'project' : context["jira_project"],
+                    'maxResults' : 0
+                    }
+
+        myResponse = requests.get(context["jira_server"], headers=headers, params=parameters)
+        print ("Testing Connectivity ... submitting: " + str(myResponse.url))
+
+        if(myResponse.ok):
+            print ("Testing Connectivity response ok.")
+            data = myResponse.json()
+            print ("Total items available: " + str(data["total"]))
+            return data["total"]
+        else:
+            print ("Testing Connectivity not ok")
+            wait_for_enter()
+            return ValueError("Check connection input details.")
         wait_for_enter()
- 
+
 class DownloadTest(object):
     def run(self, context):
         #jqlstring = str(context["jira_server"]) + 'rest/api/latest/issue/JSWCLOUD-17275
@@ -84,7 +108,9 @@ class DownloadTest(object):
 if __name__ == "__main__":
     context = {
         "username": getpass.getuser(),
-        "jira_server": 'https://jira.atlassian.com',
+        "password": getpass.getpass,
+        "jira_server": 'https://jira.atlassian.com/rest/api/latest/search?',
+        "jira_project": 'JSWCLOUD',
         "jql": 'project = JSWCLOUD AND resolution = Unresolved ORDER BY priority DESC, updated DESC',
         "jira_test_issue":'JSWCLOUD-17275',
         "testurl":'https://jira.atlassian.com/rest/api/latest/search?project=JSWCLOUD&expand=names,renderedFields'
@@ -92,7 +118,7 @@ if __name__ == "__main__":
         }
     procedure = [
         CheckConfig(),
-        DownloadTest()
+        GetMaxTickets()
     ]
     for step in procedure:
         step.run(context)
