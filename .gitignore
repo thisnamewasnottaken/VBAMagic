@@ -1,2 +1,7 @@
 VBA/.vscode/launch.json
 Python/Scratch.py
+Python/.vscode/settings.json
+Python/.noseids
+Python/nosetests.xml
+Python/__pycache__/test_jira_downloader.cpython-37.pyc
+Python/__pycache__/jira_downloader.cpython-37.pyc
