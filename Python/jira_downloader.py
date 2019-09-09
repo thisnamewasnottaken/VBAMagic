@@ -1,6 +1,6 @@
 '''
 Script to authenticate against JIRA and draw down a paginated JSON file containing all records of the provided project code and server.
-References:
+References inlcude:
 # https://blog.deiser.com/en/seven-ways-to-export-jira-issues
 # https://developer.atlassian.com/server/jira/platform/rest-apis/
 # https://stackoverflow.com/questions/17301938/making-a-request-to-a-restful-api-using-python#17306347
@@ -11,99 +11,110 @@ import getpass
 import requests
 import pandas as pd
 import json
+import unittest
  
 def wait_for_enter():
     input("Press Enter to continue: ")
  
-class CheckConfig(object):
-    def run(self, context):
-        print("The following context is applied to this script:")
-        print("The project server is " + context["jira_server"])
-        print("The project code is: " + context["jira_project"])
-        #wait_for_enter()
+def check_Config(context):
+    print("The following context is applied to this script:")
+    print("The project server is " + context["jira_server"])
+    print("The project code is: " + context["jira_project"])
+    return context
 
-class GetMaxTickets(object):
-    def run(self, context):
-        headers = { 'Content-Type' : 'application/json'
-                        }
+def get_Max_Parameters(context):
+    """Get the JIRA server API config with a zero results JQL query
+    
+    Args:
+        context: Dictionary of configuration values.
+
+    Returns:
+        context: New version of context
+    """
+
+    headers = { 'Content-Type' : 'application/json'}
+    parameters = {
+            #'project' : context["jira_project"],
+            'jql': context["jql"],
+            'maxResults' : context["maxResults"]
+            }
+    try:
+        myResponse = requests.get(
+                        context["jira_server"], 
+                        headers=headers, 
+                        params=parameters)
+        data = myResponse.json()
+        return int(data["total"])
+    except:
+        return ValueError("Check connection input details.")
+
+def download_jira_data(context):
+    '''Downloads the issue list from JIRA
+    Args:
+        context: configuration context
+
+    Returns:
+        dict. a json dictionary with issues.
+    
+    '''
+
+    #try:
+        #with csv.writer(open("test.csv", "wb+")) as f:
+            # Write CSV Header, If you dont need that, remove this line
+        #    f.writerow(["pk", "model", "codename", "name", "content_type"])
+    data = {}
+    for i in range(int(context["startAt"]),int(context["Total"]),int(context["maxResults"])):
+
+        headers = { 'Content-Type' : 'application/json',
+                    "Accept-Encoding": "gzip, deflate"}
         parameters = {
-                    'project' : context["jira_project"],
-                    'maxResults' : 0
-                    }
-
-        myResponse = requests.get(context["jira_server"], headers=headers, params=parameters)
-        print ("Testing Connectivity ... submitting: " + str(myResponse.url))
-
-        if(myResponse.ok):
-            print ("Testing Connectivity response ok.")
-            data = myResponse.json()
-            print ("Total items available: " + str(data["total"]))
-            return data["total"]
-        else:
-            print ("Testing Connectivity not ok")
-            wait_for_enter()
-            return ValueError("Check connection input details.")
-        wait_for_enter()
-
-class DownloadTest(object):
-    def run(self, context):
-        #jqlstring = str(context["jira_server"]) + 'rest/api/latest/issue/JSWCLOUD-17275
-        #https://jira.atlassian.com/rest/api/latest/issue/JSWCLOUD-17275
-        #r = requests.get('https://jira.atlassian.com/rest/api/latest/issue/JSWCLOUD-17275?expand=names,renderedFields') 
-
-        # Replace with the correct URL
-        url = "https://jira.atlassian.com/rest/api/latest/search?project=JSWCLOUD&expand=names,renderedFields"
-        # It is a good practice not to hardcode the credentials. So ask the user to enter credentials at runtime
-        # myResponse = requests.get(url,auth=HTTPDigestAuth(raw_input("username: "), raw_input("Password: ")), verify=True)
-        # myResponse = requests.get(url,verify=True)
-
-        headers = { 'Content-Type' : 'application/json'
-                        }
-
-        parameters = {
-                    'jql' : 'project IN (JSWCLOUD) AND statusCategory!=Done',
-                    'startAt': 0,
-                    'maxResults' : 50,
+                    'jql': context["jql"],
+                    'startAt': i,
+                    'maxResults' : context["maxResults"],
                     'fields' : "key,status,project,priority,issuetype,created,statuscategory"
                     }
 
-        myResponse = requests.request("GET", url, headers=headers, params=parameters)
+        myResponse = requests.get(
+                        context["jira_server"], 
+                        headers=headers, 
+                        params=parameters)
+        rawtemp = json.loads(myResponse.content)
+        data.update(json.loads(rawtemp["issues"]))
+
+        #   for issues in data:
+        #       f.writerow([issues["key"]])
+    return data
+
+        
+    #except:
+    #    print("hey")
+    #    return ValueError("Check connection input details.")
 
 
+    # For successful API call, response code will be 200 (OK)
+    # if(myResponse.ok):
+    #     myResponse.json()
+    #     # Loading the response data into a dict variable
+    #     # json.loads takes in only binary or string variables so using content to fetch binary content
+    #     # Loads (Load String) takes a Json file and converts into python data structure (dict or list, depending on JSON)
+                    
+    #     jData = json.loads(myResponse.content)
+    #     print(json.dumps(jData, indent=4, sort_keys=True))
 
-        print ("GET RESULT status_code " + str(myResponse.status_code))
-        print ("GET RESULT ok " + str(myResponse.ok))
-        print ("GET RESULT next " + str(myResponse.next))
-        # For successful API call, response code will be 200 (OK)
-        if(myResponse.ok):
-            myResponse.json()
-            # Loading the response data into a dict variable
-            # json.loads takes in only binary or string variables so using content to fetch binary content
-            # Loads (Load String) takes a Json file and converts into python data structure (dict or list, depending on JSON)
-                        
-            jData = json.loads(myResponse.content)
-            print(json.dumps(jData, indent=4, sort_keys=True))
+    #     print("The response contains {0} properties".format(len(jData)))
+    #     print("\n")
 
-            print("The response contains {0} properties".format(len(jData)))
-            print("\n")
+    # else:
+    # # If response code is not ok (200), print the resulting http error code with description
+    #     myResponse.raise_for_status()
 
-        else:
-        # If response code is not ok (200), print the resulting http error code with description
-            myResponse.raise_for_status()
+    #wait_for_enter() 
+        
+def main():
+    check_Config(context)
+    context["Total"] = get_Max_Parameters(context)
+    download_jira_data(context)
 
-
-
-
-
-
-
-
-
-
-
-
-
-        wait_for_enter()
 
 if __name__ == "__main__":
     context = {
@@ -113,14 +124,11 @@ if __name__ == "__main__":
         "jira_project": 'JSWCLOUD',
         "jql": 'project = JSWCLOUD AND resolution = Unresolved ORDER BY priority DESC, updated DESC',
         "jira_test_issue":'JSWCLOUD-17275',
-        "testurl":'https://jira.atlassian.com/rest/api/latest/search?project=JSWCLOUD&expand=names,renderedFields'
-        
+        "testurl":'https://jira.atlassian.com/rest/api/latest/search?project=JSWCLOUD&expand=names,renderedFields',
+        "maxResults": "3",
+        "Total":"0",
+        "startAt":"0"
         }
-    procedure = [
-        CheckConfig(),
-        GetMaxTickets()
-    ]
-    for step in procedure:
-        step.run(context)
-    print("Done.")
+    main()
 
+    print("Done.")
