@@ -12,6 +12,7 @@ import requests
 import pandas as pd
 import json
 import unittest
+import pprint
  
 def wait_for_enter():
     input("Press Enter to continue: ")
@@ -70,16 +71,32 @@ def download_jira_data(context):
         parameters = {
                     'jql': context["jql"],
                     'startAt': i,
-                    'maxResults' : context["maxResults"],
+                    'maxResults' : int(context["maxResults"]),
                     'fields' : "key,status,project,priority,issuetype,created,statuscategory"
                     }
-
+        print(          context["jira_server"], 
+                        headers, 
+                        parameters)
         myResponse = requests.get(
                         context["jira_server"], 
                         headers=headers, 
                         params=parameters)
-        rawtemp = json.loads(myResponse.content)
-        data.update(json.loads(rawtemp["issues"]))
+
+        # Load the JSON data into a variable for processing. 
+        rawtemp = json.loads(myResponse.content)["issues"]
+
+        for rawtempitems in rawtemp:
+            varfieldtemp = {}
+            for j in parameters["fields"].split(","):
+                try:
+                    varfieldtemp[j] = i["fields"][j]["'name'"] 
+                except:
+                    varfieldtemp[j] = None
+            data[rawtempitems["key"]]= varfieldtemp
+    pass
+        # json.loads(myResponse.content)["issues"][0]["key"]
+        
+        # json.loads(myResponse.content)["issues"][0]["fields"]
 
         #   for issues in data:
         #       f.writerow([issues["key"]])

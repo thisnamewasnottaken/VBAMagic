@@ -5,3 +5,4 @@ Python/.noseids
 Python/nosetests.xml
 Python/__pycache__/test_jira_downloader.cpython-37.pyc
 Python/__pycache__/jira_downloader.cpython-37.pyc
+Python/.vscode/launch.json
