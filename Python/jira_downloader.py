@@ -13,43 +13,37 @@ import pandas as pd
 import json
 import unittest
 import pprint
- 
+from atlassian import Jira
+import io
+
 def wait_for_enter():
     input("Press Enter to continue: ")
- 
-def check_Config(context):
-    print("The following context is applied to this script:")
-    print("The project server is " + context["jira_server"])
-    print("The project code is: " + context["jira_project"])
-    return context
 
-def get_Max_Parameters(context):
+
+def get_response_envelope(context):
     """Get the JIRA server API config with a zero results JQL query
     
     Args:
-        context: Dictionary of configuration values.
+        context: dict, Configuration values for script.
 
     Returns:
-        context: New version of context
+        dict, 
+            'total':        Number of issues in jql
+            'startAt':      Current starting point
+            'expand':       Current expand setting
+            'maxResults'    API Max Results setting from server.
+
     """
-
-    headers = { 'Content-Type' : 'application/json'}
-    parameters = {
-            #'project' : context["jira_project"],
-            'jql': context["jql"],
-            'maxResults' : context["maxResults"]
-            }
     try:
-        myResponse = requests.get(
-                        context["jira_server"], 
-                        headers=headers, 
-                        params=parameters)
-        data = myResponse.json()
-        return int(data["total"])
+        #resp = Jira(url=context["jira_server"],username= context["jira_username"], password= context["jira_server"]).jql(context["jira_jql"],fields=context["jira_fields"],limit=0)
+        resp = Jira(url=context["jira_server"]).jql(context["jira_jql"],limit=0)
+        resp = {k:v for (k,v) in resp.items() if k in ["total","startAt","expand","maxResults"]  }
+        return resp
     except:
-        return ValueError("Check connection input details.")
+        print(Exception)
 
-def download_jira_data(context):
+
+def get_jira_data(context):
     '''Downloads the issue list from JIRA
     Args:
         context: configuration context
@@ -58,93 +52,72 @@ def download_jira_data(context):
         dict. a json dictionary with issues.
     
     '''
+    data = pd.DataFrame()
+    data = data.fillna(0)
+    # Paginate through the data calls    
+    tempmax = int(context["jira_maxResults"])
+    totalrecords = int(context["jira_total_entries"])
+    #jiraserver = context["jira_server"]
 
-    #try:
-        #with csv.writer(open("test.csv", "wb+")) as f:
-            # Write CSV Header, If you dont need that, remove this line
-        #    f.writerow(["pk", "model", "codename", "name", "content_type"])
-    data = {}
-    for i in range(int(context["startAt"]),int(context["Total"]),int(context["maxResults"])):
+    data = pd.DataFrame()
+    data = data.fillna(0)
+    try:
+        if tempmax > totalrecords:
+            pager = totalrecords
+        else:
+            pager = tempmax
 
-        headers = { 'Content-Type' : 'application/json',
-                    "Accept-Encoding": "gzip, deflate"}
-        parameters = {
-                    'jql': context["jql"],
-                    'startAt': i,
-                    'maxResults' : int(context["maxResults"]),
-                    'fields' : "key,status,project,priority,issuetype,created,statuscategory"
-                    }
-        print(          context["jira_server"], 
-                        headers, 
-                        parameters)
-        myResponse = requests.get(
-                        context["jira_server"], 
-                        headers=headers, 
-                        params=parameters)
+        for i in range(0,totalrecords,pager):
+            if i == 0:    
+                print("First block starting starting at "+str(i)+" in chunks of "+str(pager)+" , total "+str(totalrecords))
+                url = str(context["jira_server"])+"/sr/jira.issueviews:searchrequest-csv-all-fields/temp/SearchRequest.csv?jqlQuery="+str(context["jira_jql"])+"&tempMax="+str(pager)+"&pager/start="+str(i)
+                urlData = requests.get(url).content
+                data = pd.read_csv(io.StringIO(urlData.decode('utf-8')),index_col=False)
+            elif i <= (totalrecords-pager):
+                print("Working on starting point "+str(i)+" in chunks of "+str(pager)+" , total "+str(totalrecords))
+                url = str(context["jira_server"])+"/sr/jira.issueviews:searchrequest-csv-all-fields/temp/SearchRequest.csv?jqlQuery="+str(context["jira_jql"])+"&tempMax="+str(pager)+"&pager/start="+str(i)
+                urlData = requests.get(url).content
+                tdata = pd.read_csv(io.StringIO(urlData.decode('utf-8')),index_col=False)
+                data = pd.concat([data, tdata],ignore_index=True,sort=False)
+            elif i > (totalrecords-pager):
+                print("Working on final block point "+str(i)+" in chunks of "+str(pager)+" , total "+str(totalrecords))
+                pager = totalrecords-i
+                url = str(context["jira_server"])+"/sr/jira.issueviews:searchrequest-csv-all-fields/temp/SearchRequest.csv?jqlQuery="+str(context["jira_jql"])+"&tempMax="+str(pager)+"&pager/start="+str(i)
+                urlData = requests.get(url).content
+                tdata = pd.read_csv(io.StringIO(urlData.decode('utf-8')),index_col=False)
+                data = pd.concat([data, tdata],ignore_index=True,sort=False)
+                print("Final block done")
+    finally:
+        print("Returning Data")
+        return data
 
-        # Load the JSON data into a variable for processing. 
-        rawtemp = json.loads(myResponse.content)["issues"]
 
-        for rawtempitems in rawtemp:
-            varfieldtemp = {}
-            for j in parameters["fields"].split(","):
-                try:
-                    varfieldtemp[j] = i["fields"][j]["'name'"] 
-                except:
-                    varfieldtemp[j] = None
-            data[rawtempitems["key"]]= varfieldtemp
+def write_jira_csv_export(context,data):
+    try:
+        export_csv = data.to_csv (r'C:\Users\maus\Downloads\test_export_dataframe.csv', index = None, header=True) 
+    finally:
+        print("write_jira_csv_export is complete")
     pass
-        # json.loads(myResponse.content)["issues"][0]["key"]
-        
-        # json.loads(myResponse.content)["issues"][0]["fields"]
-
-        #   for issues in data:
-        #       f.writerow([issues["key"]])
-    return data
-
-        
-    #except:
-    #    print("hey")
-    #    return ValueError("Check connection input details.")
 
 
-    # For successful API call, response code will be 200 (OK)
-    # if(myResponse.ok):
-    #     myResponse.json()
-    #     # Loading the response data into a dict variable
-    #     # json.loads takes in only binary or string variables so using content to fetch binary content
-    #     # Loads (Load String) takes a Json file and converts into python data structure (dict or list, depending on JSON)
-                    
-    #     jData = json.loads(myResponse.content)
-    #     print(json.dumps(jData, indent=4, sort_keys=True))
-
-    #     print("The response contains {0} properties".format(len(jData)))
-    #     print("\n")
-
-    # else:
-    # # If response code is not ok (200), print the resulting http error code with description
-    #     myResponse.raise_for_status()
-
-    #wait_for_enter() 
-        
 def main():
-    check_Config(context)
-    context["Total"] = get_Max_Parameters(context)
-    download_jira_data(context)
+    #get_response_envelope = get_response_envelope(context)
+    context["jira_total_entries"] = get_response_envelope(context)["total"] #get_response_envelope["total"]
+    data = get_jira_data(context)
+    write_jira_csv_export(context, data)
+    print("done")
 
 
 if __name__ == "__main__":
     context = {
-        "username": getpass.getuser(),
-        "password": getpass.getpass,
-        "jira_server": 'https://jira.atlassian.com/rest/api/latest/search?',
-        "jira_project": 'JSWCLOUD',
-        "jql": 'project = JSWCLOUD AND resolution = Unresolved ORDER BY priority DESC, updated DESC',
-        "jira_test_issue":'JSWCLOUD-17275',
-        "testurl":'https://jira.atlassian.com/rest/api/latest/search?project=JSWCLOUD&expand=names,renderedFields',
-        "maxResults": "3",
-        "Total":"0",
-        "startAt":"0"
+        "jira_username": getpass.getuser(),
+        "jira_password": getpass.getpass,
+        "jira_server": 'https://jira.atlassian.com',
+        "jira_jql": 'project = JSWCLOUD AND resolution = Unresolved ORDER BY priority DESC, updated DESC',
+        "jira_maxResults": "1000",
+        "jira_total_entries":None,
+        "jira_fields": ['key','status','project','priority','issuetype','created','statuscategory'],
+        "csv_destination": None
         }
     main()
 
