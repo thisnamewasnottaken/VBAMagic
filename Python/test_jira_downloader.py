@@ -6,53 +6,91 @@ References:
 # https://stackoverflow.com/questions/17301938/making-a-request-to-a-restful-api-using-python#17306347
 # https://medium.com/python-pandemonium/json-the-python-way-91aac95d4041
 '''
+import getpass
+import json
+import os
 import unittest
+
+import pandas
+
 import jira_downloader
- 
+
+
 class Config_Related_Tests(unittest.TestCase):
     """Configuration related tests for the jira_downloader."""
 
     def setUp(self):
         """Fixture that sets the test variables to start with."""
         # Setting the default test context against the public jira project  
-        self.context = {
-            "username": None,
-            "password": None,
-            "jira_server": 'https://jira.atlassian.com/rest/api/latest/search?',
-            "jira_project": 'JSWCLOUD',
-            "jql": 'project = JSWCLOUD AND resolution = Unresolved ORDER BY priority DESC, updated DESC',
-            "jira_test_issue":'JSWCLOUD-17275',
-            "testurl":'https://jira.atlassian.com/rest/api/latest/search?project=JSWCLOUD&expand=names,renderedFields',
-            "Total":"0"
-            }
+
+        with open('test_context.json') as json_context:
+            self.context = json.load(json_context)
+        self.data = pandas.read_json(path_or_buf=r'test_data.json' ,orient='table')
 
 
     def tearDown(self):
         """Fixture that deletes the files used by the test methods."""
         try:
+            myfile = self.context.get("csv_destination_file")
+            print("Trying to remove "+str(myfile))
+            os.remove(myfile)
+        except:
+            pass
+        try:
             self.context.clear
         except:
             pass
 
-    def test_check_Config_runs(self):
-        """Basic smoke test: does check_Config run."""
-        jira_downloader.check_Config(self.context)
 
-    def test_check_Config_values_pass(self):
-        """Basic smoke test: sample confirming context values are passed through."""
-        self.assertEqual(jira_downloader.check_Config(self.context)["jira_server"],'https://jira.atlassian.com/rest/api/latest/search?')
-
-    def test_get_Max_Parameters_runs(self):
-        """Basic smoke test: does MaxParameters run"""
-        jira_downloader.get_Max_Parameters(self.context)
-
-    def test_get_Max_Parameters_returns_Int(self):
-        """Basic smoke test: does max_Parameters return the expected integer"""
-        self.assertIsInstance(jira_downloader.get_Max_Parameters(self.context),int)
+    def test_smoke_get_response_envelope(self):
+        """Smoke test: Check if 'get_response_envelope' exist and runs"""
+        jira_downloader.get_response_envelope(self.context)
 
 
+    def test_smoke_get_jira_data(self):
+        """Smoke test: Check if 'get_jira_data' exist and runs"""
+        jira_downloader.get_jira_data(self.context)
 
 
+    def test_smoke_write_jira_csv_export(self):
+        """Smoke test: Check if 'write_jira_csv_export' exist and runs"""
+        jira_downloader.write_jira_csv_export(self.context, self.data)
+
+
+    def test_smoke_run(self):
+        """Smoke test: Check if 'run' exist and runs"""
+        jira_downloader.run(self.context)
+
+
+class Functional_Tests(unittest.TestCase):
+    """Functional tests for the jira_downloader."""
+
+    def setUp(self):
+        """Fixture that sets the test variables to start with."""
+        # Setting the default test context against the public jira project  
+
+        with open('test_context.json') as json_data:
+            self.context = json.load(json_data)
+        self.data = pandas.read_json(path_or_buf=r'D:\GitHub\VBAMagic\Python\test_data.json' ,orient='table')
+
+
+    def tearDown(self):
+        """Fixture that deletes the files used by the test methods."""
+        try:
+            myfile = self.context.get("csv_destination_file")
+            print("Trying to remove "+str(myfile))
+            os.remove(myfile)
+        except:
+            pass
+        try:
+            self.context.clear
+        except:
+            pass
+
+
+    def test_smoke_get_response_envelope(self):
+        """Smoke test: Check if 'get_response_envelope' exist and runs"""
+        jira_downloader.get_response_envelope(self.context)
 
 if __name__ == '__main__':
     unittest.main()

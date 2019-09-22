@@ -6,25 +6,26 @@ References inlcude:
 # https://stackoverflow.com/questions/17301938/making-a-request-to-a-restful-api-using-python#17306347
 # https://medium.com/python-pandemonium/json-the-python-way-91aac95d4041
 '''
-import sys
 import getpass
-import requests
-import pandas as pd
-import json
-import unittest
-import pprint
-from atlassian import Jira
 import io
+import json
+import pprint
+import sys
+import unittest
 
-def wait_for_enter():
-    input("Press Enter to continue: ")
+import atlassian
+import pandas as pd
+import requests
 
 
 def get_response_envelope(context):
-    """Get the JIRA server API config with a zero results JQL query
+    """Sends a zero results JQL query to the project server to see what the current and maximum parameters are.
+    Assumes no authentication required, that's your problem.
     
     Args:
         context: dict, Configuration values for script.
+            'jira_server':  Jira server, e.g. 'https://jira.atlassian.com'
+            'jira_jql':     Jira jql query, e.g. project = JSWCLOUD AND resolution = Unresolved ORDER BY priority DESC, updated DESC'
 
     Returns:
         dict, 
@@ -32,11 +33,9 @@ def get_response_envelope(context):
             'startAt':      Current starting point
             'expand':       Current expand setting
             'maxResults'    API Max Results setting from server.
-
     """
     try:
-        #resp = Jira(url=context["jira_server"],username= context["jira_username"], password= context["jira_server"]).jql(context["jira_jql"],fields=context["jira_fields"],limit=0)
-        resp = Jira(url=context["jira_server"]).jql(context["jira_jql"],limit=0)
+        resp = atlassian.Jira(url=context["jira_server"]).jql(context["jira_jql"],limit=0)
         resp = {k:v for (k,v) in resp.items() if k in ["total","startAt","expand","maxResults"]  }
         return resp
     except:
@@ -57,7 +56,6 @@ def get_jira_data(context):
     # Paginate through the data calls    
     tempmax = int(context["jira_maxResults"])
     totalrecords = int(context["jira_total_entries"])
-    #jiraserver = context["jira_server"]
 
     data = pd.DataFrame()
     data = data.fillna(0)
@@ -93,32 +91,22 @@ def get_jira_data(context):
 
 
 def write_jira_csv_export(context,data):
-    try:
-        export_csv = data.to_csv (r'C:\Users\maus\Downloads\test_export_dataframe.csv', index = None, header=True) 
-    finally:
-        print("write_jira_csv_export is complete")
-    pass
+    data.to_csv (context.get("csv_destination_file"), index = None, header=True)
 
 
-def main():
-    #get_response_envelope = get_response_envelope(context)
-    context["jira_total_entries"] = get_response_envelope(context)["total"] #get_response_envelope["total"]
+def run(context):
+    print("jira_downloader: Main run starting.")
+    if context.get("jira_total_entries") is None:
+        print("jira_downloader: Setting record limit as none was provided.")
+        context["jira_total_entries"] = get_response_envelope(context)["total"]
+    print("jira_downloader: Downloading data.")
     data = get_jira_data(context)
+    print("jira_downloader: Exporting...")
     write_jira_csv_export(context, data)
-    print("done")
+    print("jira_downloader: Exporting...")
 
 
 if __name__ == "__main__":
-    context = {
-        "jira_username": getpass.getuser(),
-        "jira_password": getpass.getpass,
-        "jira_server": 'https://jira.atlassian.com',
-        "jira_jql": 'project = JSWCLOUD AND resolution = Unresolved ORDER BY priority DESC, updated DESC',
-        "jira_maxResults": "1000",
-        "jira_total_entries":None,
-        "jira_fields": ['key','status','project','priority','issuetype','created','statuscategory'],
-        "csv_destination": None
-        }
-    main()
-
-    print("Done.")
+    run(context)                        #pylint: disable=undefined-variable 
+    if context is None:                 #pylint: disable=undefined-variable
+        raise NotImplementedError()

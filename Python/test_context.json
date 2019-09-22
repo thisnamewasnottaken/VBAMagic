@@ -1,0 +1,1 @@
+{"jira_server": "https://jira.atlassian.com", "jira_jql": "project = JSWCLOUD AND resolution = Unresolved ORDER BY priority DESC, updated DESC", "jira_maxResults": "10", "jira_total_entries": "30", "jira_fields": ["key", "status", "project", "priority", "issuetype", "created", "statuscategory"], "csv_destination_file": "test_export_df.csv"}
