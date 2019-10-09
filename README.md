@@ -1,7 +1,7 @@
 # About ttwlb
-A set of shortcuts, subroutines, notes and knicknacks for automation in the officeusing Microsoft Office VBA and Python.
+A set of shortcuts, subroutines, notes and knicknacks for automation in the office using Microsoft Office VBA and Python.
 
-Some are original, others were adapted from sources, none of these big enough to warrant anything more than this.
+Some are original, others were adapted from sources, none of these big enough for a full solution.
 
 ## SUPPORT
 In space no one can hear you scream!
